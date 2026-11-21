@@ -1,0 +1,46 @@
+# cobalt — instance pribadi (untuk YouTube & tanpa limit)
+# Cara pakai:
+#   1. Install Docker Desktop (https://www.docker.com/products/docker-desktop/)
+#   2. Simpan file ini sebagai "docker-compose.yml" di sebuah folder, mis. C:\cobalt\
+#   3. Di folder itu, jalankan:  docker compose up -d
+#   4. Tunggu ±1 menit, lalu buka https://downloader-pribadi.pages.dev
+#      → ⚙️ Pengaturan → URL API instance:  http://localhost:9000/  → Simpan
+#   5. Tombol YOUTUBE akan muncul di grid platform. Selesai.
+# Berhenti:  docker compose down
+# Catatan: instance ini hanya bisa diakses dari PC-mu sendiri (aman).
+
+services:
+    cobalt:
+        image: ghcr.io/imputnet/cobalt:11
+
+        init: true
+        read_only: true
+        restart: unless-stopped
+        container_name: cobalt
+
+        ports:
+            - 127.0.0.1:9000:9000/tcp
+
+        environment:
+            API_URL: "http://localhost:9000/"
+
+            # --- Verifikasi anti-bot Turnstile (opsional, biar web bisa dipakai publik) ---
+            # 1. Buat site di dash.cloudflare.com → Turnstile (GRATIS),
+            #    daftarkan domain web-mu (mis. downloader-pribadi.pages.dev).
+            # 2. Buka 3 baris di bawah (hapus tanda #), isi kuncinya,
+            #    lalu jalankan:  docker compose up -d
+            # 3. Web otomatis menampilkan widget verifikasi (tidak perlu ubah web).
+            # TURNSTILE_SITEKEY: "0x..."
+            # TURNSTILE_SECRET: "0x..."
+            # JWT_SECRET: "ganti-dengan-string-acak-minimal-16-karakter"
+
+        labels:
+            - com.centurylinklabs.watchtower.scope=cobalt
+
+    # watchtower: update otomatis image cobalt
+    watchtower:
+        image: ghcr.io/containrrr/watchtower
+        restart: unless-stopped
+        command: --cleanup --scope cobalt --interval 900 --include-restarting
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock

@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Downloader Pribadi</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬇️</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+:root{
+  --bg:#000; --panel:#0b0b10; --panel2:#101016; --line:#1e1e28;
+  --txt:#f2f5f9; --dim:#9aa3b2; --faint:#5b6472;
+  --cyan:#22d3ee; --cyan-dim:rgba(34,211,238,.12);
+  --accent:#22d3ee; --accent-border:rgba(34,211,238,.28); --accent-glow:rgba(34,211,238,.08);
+  --accent-hborder:rgba(34,211,238,.65); --accent-hglow:rgba(34,211,238,.14); --accent-btn-glow:rgba(34,211,238,.35);
+  --green:#34d399; --red:#f87171; --amber:#fbbf24;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+body{background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; min-height:100vh}
+.wrap{max-width:900px; margin:0 auto; padding:28px 18px 70px; position:relative}
+.topbar{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:26px}
+.gear{position:static; flex-shrink:0; background:var(--panel); border:1px solid var(--line); color:var(--dim); border-radius:10px; padding:8px 11px; cursor:pointer; font-size:15px}
+.gear:hover{color:var(--cyan); border-color:var(--cyan)}
+.syspill{display:flex; justify-content:center; margin-bottom:0; flex:1; min-width:0}
+.syspill span{display:inline-flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:8px 18px; font-size:11px; letter-spacing:2px; color:var(--dim); font-weight:600}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px var(--amber)}
+.dot.ok{background:var(--green); animation:pulseGreen 2.2s ease-in-out infinite}
+.dot.bad{background:var(--red); box-shadow:0 0 8px var(--red)}
+@keyframes pulseGreen{0%,100%{opacity:.45; box-shadow:0 0 5px rgba(52,211,153,.35)}50%{opacity:1; box-shadow:0 0 16px rgba(52,211,153,.95)}}
+h1.title{text-align:center; font-size:clamp(34px,7vw,64px); font-weight:900; letter-spacing:1px; line-height:1.05; color:#ff3b5c; animation:rgbSpin 9s linear infinite}
+h1.title .c{color:var(--cyan); text-shadow:0 0 28px rgba(34,211,238,.45)}
+.tagline{text-align:center; color:var(--cyan); font-size:12px; letter-spacing:5px; margin:12px 0 34px; font-weight:600}
+.grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px}
+@media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+.plat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:15px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:.15s; color:var(--dim); font-size:12px; font-weight:700; letter-spacing:1px}
+.plat .ic{font-size:18px; line-height:1; width:26px; text-align:center; flex-shrink:0; color:var(--brand)}
+.plat .ic i{font-style:normal; vertical-align:-2px}
+.plat:hover{color:#fff; border-color:var(--brand); background:var(--brand-soft); box-shadow:0 0 20px var(--brand-glow)}
+.plat.on{border-color:var(--brand); color:#fff; background:var(--brand-soft); box-shadow:0 0 18px var(--brand-glow)}
+.plat.on:hover{box-shadow:0 0 26px var(--brand-glow)}
+/* efek wave "ngecas 80%" di tombol yang dipilih */
+.plat{position:relative; overflow:hidden; isolation:isolate}
+.plat .wave{position:absolute; left:0; right:0; bottom:0; height:100%; overflow:hidden; z-index:0; opacity:0; transition:opacity .35s ease; pointer-events:none}
+.plat.on .wave,.plat:hover .wave{opacity:1}
+.plat .wave::before,.plat .wave::after{content:""; position:absolute; width:200%; height:200%; left:-50%; top:0%; border-radius:40%; background:var(--brand-soft); animation:waveSpin 7s linear infinite}
+.plat .wave::after{border-radius:44%; background:var(--brand-glow); opacity:.45; animation-duration:11s; animation-direction:reverse}
+.plat .ic,.plat span:last-child{position:relative; z-index:1}
+@keyframes waveSpin{to{transform:rotate(360deg)}}
+
+/* ---------- efek interaktif ala ZeroNaut ---------- */
+/* garis kartu nyaris menyatu dgn background; menyala saat hover */
+.plat,.stat,.rcard,.hitem{border:1px solid rgba(255,255,255,.055); transition:border-color .25s ease, box-shadow .25s ease, color .15s ease, background .15s ease}
+.stat:hover,.rcard:hover,.hitem:hover{border-color:rgba(34,211,238,.7); box-shadow:0 0 20px rgba(34,211,238,.16), inset 0 0 16px rgba(34,211,238,.05)}
+.stat:has(.lb.g):hover{border-color:rgba(52,211,153,.7); box-shadow:0 0 20px rgba(52,211,153,.16), inset 0 0 16px rgba(52,211,153,.05)}
+.console{background:var(--panel); border:1px solid var(--accent-border); border-radius:18px; padding:18px; box-shadow:0 0 30px var(--accent-glow); margin-bottom:26px; transition:border-color .25s ease, box-shadow .25s ease}
+.console:hover{border-color:var(--accent-hborder); box-shadow:0 0 34px var(--accent-hglow)}
+.cbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:11px; letter-spacing:2px; font-weight:700}
+.cbar .t{color:var(--dim)} .cbar .t b{color:var(--accent)}
+.cbar .st{color:var(--faint)} .cbar .st.run{color:var(--cyan)} .cbar .st.done{color:var(--green)} .cbar .st.err{color:var(--red)}
+.irow{display:flex; gap:10px}
+.irow input{flex:1; background:#050508; border:1px solid var(--line); border-radius:12px; padding:14px 16px; color:var(--txt); font-size:14px; font-family:ui-monospace,Menlo,monospace; outline:none; min-width:0}
+.irow input:focus{border-color:var(--accent)}
+.irow input::placeholder{color:var(--faint)}
+.extract{background:var(--accent); border:none; color:#001318; font-weight:900; letter-spacing:1px; border-radius:12px; padding:14px 26px; font-size:14px; cursor:pointer; box-shadow:0 0 22px var(--accent-btn-glow); white-space:nowrap; transition:background .25s ease, box-shadow .25s ease}
+.extract:hover{filter:brightness(1.1)}
+.extract:disabled{opacity:.55; cursor:wait}
+.orow{display:flex; gap:14px; margin-top:12px; align-items:center; flex-wrap:wrap}
+.orow label{font-size:11px; letter-spacing:1.5px; color:var(--faint); font-weight:600}
+.orow select{background:#050508; border:1px solid var(--line); color:var(--dim); border-radius:8px; padding:7px 10px; font-size:12px}
+.msg{font-size:13px; color:var(--dim); min-height:22px; margin:2px 2px 14px; font-family:ui-monospace,Menlo,monospace}
+.bbar{position:relative; height:28px; border-radius:9px; background:#050508; border:1px solid var(--line); overflow:hidden; margin:-4px 2px 14px; display:none}
+.bfill{position:absolute; top:0; left:0; bottom:0; width:0%; background:linear-gradient(90deg,#0e7490,var(--accent)); transition:width .7s ease; box-shadow:0 0 14px var(--accent-glow)}
+.bbar.wait .bfill{animation:bpulse 1.5s ease-in-out infinite}
+@keyframes bpulse{0%,100%{opacity:.55}50%{opacity:1}}
+.bbar.done .bfill{background:linear-gradient(90deg,#15803d,#4ade80); box-shadow:none}
+.btext{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.6); letter-spacing:.3px; white-space:nowrap; overflow:hidden; font-family:ui-monospace,Menlo,monospace}
+.msg.err{color:var(--red)} .msg.ok{color:var(--green)}
+#results{display:flex; flex-direction:column; gap:14px; margin-bottom:8px}
+.rcard{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; display:flex; gap:16px; align-items:center}
+.rcard img.th{width:120px; height:90px; object-fit:cover; border-radius:10px; background:#000; border:1px solid var(--line); flex-shrink:0}
+.rcard .fn{font-weight:700; font-size:14px; word-break:break-all; margin-bottom:6px}
+.badge{display:inline-block; font-size:10px; letter-spacing:1.5px; font-weight:800; color:var(--cyan); border:1px solid var(--cyan); border-radius:6px; padding:3px 8px; margin-bottom:10px}
+.badge.g{color:var(--green); border-color:var(--green)}
+.dlrow{display:flex; gap:8px; flex-wrap:wrap}
+.dlbtn{display:inline-block; background:var(--cyan-dim); border:1px solid var(--cyan); color:var(--cyan); border-radius:10px; padding:10px 18px; font-size:13px; font-weight:800; letter-spacing:.5px; text-decoration:none}
+.dlbtn:hover{background:rgba(34,211,238,.22)}
+.dlbtn.audio{border-color:var(--green); color:var(--green); background:rgba(52,211,153,.08)}
+.pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-top:12px}
+.pick{background:#050508; border:1px solid var(--line); border-radius:12px; overflow:hidden}
+.pick img{width:100%; height:100px; object-fit:cover; display:block; background:#000}
+.pick .pb{padding:10px}
+.pick .pt{font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:1.5px}
+.pick a{display:block; text-align:center; margin-top:8px; background:var(--cyan-dim); border:1px solid var(--cyan); color:var(--cyan); border-radius:8px; padding:8px; font-size:12px; font-weight:800; text-decoration:none}
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px}
+.stat{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; display:flex; justify-content:space-between; align-items:center}
+.stat .lb{font-size:11px; letter-spacing:2px; font-weight:700; margin-bottom:6px}
+.stat .lb.c{color:var(--cyan)} .stat .lb.g{color:var(--green)}
+.stat .num{font-size:30px; font-weight:900; font-variant-numeric:tabular-nums}
+.stat .ico{width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px}
+.stat .ico.c{background:var(--cyan-dim); border:1px solid rgba(34,211,238,.3)}
+.stat .ico.g{background:rgba(52,211,153,.08); border:1px solid rgba(52,211,153,.3)}
+/* ---------- statistik global (v3.16, ala Zeta) ---------- */
+.statcard{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:20px}
+.statcard h2{font-size:11px; letter-spacing:2px; color:var(--dim); font-weight:700; margin-bottom:4px}
+.statleg{display:flex; gap:16px; font-size:11px; color:var(--faint); margin-bottom:12px}
+.statleg i{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px}
+.stattot{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:12px}
+.stattot .lb{font-size:11px; letter-spacing:2px; font-weight:700; margin-bottom:6px}
+.stattot .num{font-size:30px; font-weight:900; font-variant-numeric:tabular-nums}
+#statChart{width:100%; height:140px; display:block}
+.statnote{font-size:11px; color:var(--faint); margin-top:10px; text-align:center}
+.histbtn{display:block; margin:0 auto 8px; background:none; border:none; color:var(--faint); font-size:12px; letter-spacing:2px; cursor:pointer; font-weight:600}
+.histbtn:hover{color:var(--cyan)}
+#histwrap{display:none}
+#histwrap.show{display:block}
+.hitem{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px}
+.hitem>div{min-width:0; flex:1}
+.hitem .u{font-size:13px; word-break:break-all}
+.hitem .t{font-size:11px; color:var(--faint); font-family:ui-monospace,monospace; word-break:break-all}
+.hitem button{background:none; border:1px solid var(--line); color:var(--cyan); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; white-space:nowrap; font-weight:700}
+footer{margin-top:44px; text-align:center; font-size:11px; color:var(--faint); font-family:ui-monospace,monospace; letter-spacing:1px; line-height:2; transition:color .25s ease}
+footer:hover{color:#fff}
+/* animasi RGB lambat untuk judul utama */
+@keyframes rgbSpin{to{filter:hue-rotate(360deg)}}
+.modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:16px; z-index:50}
+.modal.show{display:flex}
+.mbox{background:var(--panel2); border:1px solid var(--cyan); border-radius:18px; padding:24px; width:100%; max-width:440px; box-shadow:0 0 40px rgba(34,211,238,.12)}
+.mbox h3{margin-bottom:10px; font-size:16px; letter-spacing:1px}
+.mbox label{display:block; font-size:11px; letter-spacing:1.5px; color:var(--faint); margin:14px 0 6px; font-weight:700}
+.mbox input{width:100%; background:#050508; border:1px solid var(--line); border-radius:10px; padding:11px 13px; color:var(--txt); font-size:14px; font-family:ui-monospace,monospace}
+.mrow{display:flex; gap:8px; margin-top:20px; justify-content:flex-end; flex-wrap:wrap}
+.btn{background:var(--cyan); border:none; color:#001318; font-weight:800; border-radius:10px; padding:10px 18px; font-size:13px; cursor:pointer}
+.btn.ghost{background:var(--panel); color:var(--txt); border:1px solid var(--line); font-weight:600}
+.note{font-size:12px; color:var(--faint); margin-top:14px; line-height:1.7}
+.note b{color:var(--amber)}
+#tsbox{margin:14px 0 4px; display:flex; justify-content:center}
+.spin{display:inline-block; width:13px; height:13px; border:2px solid var(--line); border-top-color:var(--cyan); border-radius:50%; animation:sp .8s linear infinite; vertical-align:-2px; margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- preloader (v3.18, ala Zeta) ---------- */
+#preloader{position:fixed; inset:0; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; transition:opacity .45s ease, visibility .45s}
+#preloader.hide{opacity:0; visibility:hidden; pointer-events:none}
+.pre-logo{font-size:44px; line-height:1}
+.pre-title{font-size:15px; font-weight:900; letter-spacing:4px; color:var(--txt)}
+.pre-title span{color:var(--cyan)}
+.pre-track{width:180px; height:3px; background:#1e1e28; border-radius:99px; overflow:hidden}
+.pre-bar{height:100%; width:0; background:linear-gradient(90deg,#0e7490,var(--cyan)); border-radius:99px; animation:preFill 1.2s ease forwards}
+@keyframes preFill{to{width:100%}}
+.pre-note{font-size:10px; letter-spacing:3px; color:var(--faint); font-weight:600}
+@media (prefers-reduced-motion: reduce){.pre-bar{animation:none; width:100%}}
+/* ---------- footer (v3.18) ---------- */
+footer a{color:var(--dim); text-decoration:none}
+footer a:hover{color:var(--cyan)}
+.flinks{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center}
+
+/* ---------- rapihan tampilan HP ---------- */
+@media(max-width:560px){
+  .wrap{padding:20px 14px 56px}
+  .topbar{margin-bottom:20px; gap:8px}
+  .syspill span{padding:7px 14px; font-size:10px; letter-spacing:1.5px; white-space:nowrap}
+  .gear{padding:7px 10px; font-size:14px}
+  h1.title{font-size:clamp(24px,7.5vw,38px); letter-spacing:0}
+  .tagline{letter-spacing:3px; margin:10px 0 24px}
+  .irow{flex-direction:column}
+  .irow input{font-size:16px; width:100%} /* cegah auto-zoom iOS */
+  .extract{width:100%; padding:15px}
+  .orow select{font-size:16px}
+  .console{padding:14px; border-radius:14px}
+  .rcard{flex-direction:column; align-items:stretch; padding:14px}
+  .rcard img.th{width:100%; height:auto; max-height:220px}
+  .dlbtn{flex:1; text-align:center; padding:12px 10px}
+  .stats{gap:10px}
+  .stat{padding:14px}
+  .stat .num{font-size:24px}
+  .stat .ico{width:40px; height:40px}
+  .gear{top:14px; right:14px}
+  .mbox{padding:20px}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+}
+</style>
+</head>
+<body>
+<div id="preloader" aria-hidden="true">
+  <div class="pre-logo">⬇️</div>
+  <div class="pre-title">DOWNLOADER<span>.</span>PRIBADI</div>
+  <div class="pre-track"><div class="pre-bar"></div></div>
+  <div class="pre-note">MEMUAT…</div>
+</div>
+<noscript><style>#preloader{display:none}</style></noscript>
+<div class="wrap">
+  <div class="topbar">
+    <div class="syspill"><span><span class="dot" id="sysdot"></span><span id="sysmsg">MENGHUBUNGKAN…</span></span></div>
+    <button class="gear" id="btnSettings" title="Pengaturan">⚙️</button>
+  </div>
+  <h1 class="title">DOWNLOADER<span class="c">.</span>PRIBADI</h1>
+  <div class="tagline">— MESIN TANPA WATERMARK —</div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="console">
+    <div class="cbar">
+      <span class="t">TARGET: <b id="tgt">UNIVERSAL</b></span>
+      <span class="st" id="cst">READY</span>
+    </div>
+    <div class="irow">
+      <input id="url" type="url" placeholder="Paste Universal Link here..." autocomplete="off" spellcheck="false">
+      <button class="extract" id="btnGo">⚡ EXTRACT</button>
+    </div>
+    <div class="orow">
+      <label>KUALITAS <select id="q">
+        <option value="max">MAX</option><option value="1080" selected>1080p</option>
+        <option value="720">720p</option><option value="480">480p</option><option value="360">360p</option>
+      </select></label>
+      <label>MODE <select id="m">
+        <option value="auto" selected>VIDEO</option><option value="audio">AUDIO MP3</option><option value="mute">VIDEO BISU</option>
+      </select></label>
+    </div>
+  </div>
+
+  <div class="console" id="tscard" style="display:none">
+    <div class="cbar"><span class="t">🛡️ VERIFIKASI MANUSIA</span><span class="st run">SEKALI SAJA</span></div>
+    <div class="note" style="margin:0 0 10px">Server meminta verifikasi anti-bot. Selesaikan di bawah, lalu klik EXTRACT.</div>
+    <div id="tsbox" style="display:flex;justify-content:center"></div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div class="bbar" id="bbar"><div class="bfill" id="bfill"></div><div class="btext" id="btext"></div></div>
+  <div id="results"></div>
+
+  <div class="stats">
+    <div class="stat"><div><div class="lb g">● PROCESSED</div><div class="num" id="stProc">0</div></div><div class="ico g">📊</div></div>
+    <div class="stat"><div><div class="lb c">● SERVICES</div><div class="num" id="stSvc">–</div></div><div class="ico c">🌐</div></div>
+  </div>
+
+  <div class="statcard" id="gstat" style="display:none">
+    <h2>📊 STATISTIK</h2>
+    <div class="statleg"><span><i style="background:#22d3ee"></i>Download sukses</span><span><i style="background:#34d399"></i>Pengguna baru</span></div>
+    <div class="stattot">
+      <div><div class="lb" style="color:var(--cyan)">● PENGGUNA</div><div class="num" id="gsUsers">0</div></div>
+      <div><div class="lb" style="color:var(--green)">● DOWNLOAD SUKSES</div><div class="num" id="gsDl">0</div></div>
+    </div>
+    <canvas id="statChart"></canvas>
+    <div class="statnote" id="gsNote">14 hari terakhir · dihitung dari server</div>
+  </div>
+
+  <button class="histbtn" id="btnHist">▸ SHOW HISTORY</button>
+  <div id="histwrap"><div id="hist"></div>
+    <div style="text-align:center; margin-top:6px"><button class="histbtn" id="btnHistMore" style="display:none">LIHAT SEMUA</button></div>
+    <div style="text-align:center; margin-top:6px"><button class="histbtn" id="btnClearHist">HAPUS RIWAYAT</button></div>
+  </div>
+
+  <footer>
+    <div>© 2026 DOWNLOADER PRIBADI · UNTUK PEMAKAIAN PRIBADI</div>
+    <div>Dibuat oleh Nur Inasari &amp; Ardiyan</div>
+    <div class="flinks"><a href="https://github.com/imputnet/cobalt" target="_blank" rel="noopener">Mesin: Cobalt (Open Source)</a><span>·</span><a href="https://galeriya.my.id" target="_blank" rel="noopener">Galeri Proyek</a></div>
+    <span class="badge" id="dlver" style="margin-top:10px">…</span>
+  </footer>
+</div>
+
+<div class="modal" id="modalSet">
+  <div class="mbox">
+    <h3>⚙️ PENGATURAN</h3>
+    <label>PRESET INSTANCE</label>
+    <select id="setPreset" style="width:100%;background:#050508;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px">
+      <option value="https://cobalt-pribadi.onrender.com/">🌐 Instance pribadi (Render) — gratis</option>
+      <option value="https://api.cobalt.tools/">Resmi cobalt — stabil, tanpa YouTube</option>
+      <option value="https://cobalt-api.meowing.de/">Komunitas meowing.de — dengan YouTube</option>
+      <option value="https://capi.3kh0.net/">Komunitas 3kh0.net — dengan YouTube</option>
+      <option value="custom">Kustom…</option>
+    </select>
+    <label>URL API INSTANCE</label>
+    <input id="setApi" placeholder="https://api.cobalt.tools/">
+    <label>API KEY (OPSIONAL)</label>
+    <input id="setKey" type="password" placeholder="kosongkan bila tidak perlu" autocomplete="off">
+    <div class="msg" id="setMsg" style="margin-top:10px"></div>
+    <div class="mrow">
+      <button class="btn ghost" id="setTest">TES</button>
+      <button class="btn ghost" id="setReset">RESET</button>
+      <button class="btn" id="setSave">SIMPAN</button>
+      <button class="btn ghost" id="setClose">TUTUP</button>
+    </div>
+    <div class="note">Instance <b>resmi & komunitas</b> memakai verifikasi anti-bot yang <b>hanya jalan di situs resmi cobalt</b> — jadi di web ini verifikasinya akan gagal (sudah saya tes). <b>Solusi pasti:</b> jalankan instance sendiri via Docker (±5 menit, tanpa verifikasi, YouTube ikut jalan) lalu isi URL <b>http://localhost:9000/</b> di atas. File siap pakai: <a href="cobalt-docker-compose.yml" download style="color:var(--cyan)">cobalt-docker-compose.yml</a><br><b>YouTube</b> otomatis diambil via <b>Piped</b> (tanpa perlu instance) selama instance aktif tidak mendukung YouTube.</div>
+  </div>
+</div>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const DL_VER="3.26"; /* naikkan tiap rilis — badge footer, cukup refresh untuk dapat versi baru */
+const BRIDGE="https://5001-agqwxpndbjpi6e7rmr4xb3raxa.instabox.tech"; /* jembatan yt-dlp di box InstaBox — penyelamat YouTube saat cobalt+Piped gagal */
+function isMeta(url){try{const h=new URL(url).hostname.toLowerCase();return /(^|\.)(facebook\.com|fb\.watch|instagram\.com)$/.test(h);}catch(e){return false;}} /* Meta menuntut login: cobalt selalu fetch.empty, jembatan+cookies adalah jalurnya */
+const DEF_API="https://api.cobalt.tools/";
+const YT_PRESETS=["https://cobalt-api.meowing.de/","https://capi.3kh0.net/"];
+const getApi=()=>(localStorage.getItem("dl_api")||DEF_API).replace(/\/*$/,"/");
+const getKey=()=>localStorage.getItem("dl_key")||"";
+let instance=null, jwt=null;
+
+/* ikon modern Font Awesome — bukan emoji lagi */
+const ICONS={tiktok:"fa-brands fa-tiktok",instagram:"fa-brands fa-instagram",twitter:"fa-brands fa-x-twitter",facebook:"fa-brands fa-facebook-f",soundcloud:"fa-brands fa-soundcloud",snapchat:"fa-brands fa-snapchat",pinterest:"fa-brands fa-pinterest-p",reddit:"fa-brands fa-reddit-alien",tumblr:"fa-brands fa-tumblr",dailymotion:"fa-brands fa-dailymotion",vimeo:"fa-brands fa-vimeo-v",bilibili:"fa-solid fa-tv",bluesky:"fa-brands fa-bluesky",twitch:"fa-brands fa-twitch","twitch clips":"fa-brands fa-twitch",streamable:"fa-solid fa-circle-play",vk:"fa-brands fa-vk",ok:"fa-solid fa-users",rutube:"fa-solid fa-circle-play",loom:"fa-solid fa-video",newgrounds:"fa-solid fa-gamepad",youtube:"fa-brands fa-youtube","youtube shorts":"fa-brands fa-youtube","youtube music":"fa-solid fa-music",spotify:"fa-brands fa-spotify",xiaohongshu:"fa-solid fa-book-open",linkedin:"fa-brands fa-linkedin-in"};
+const NAMES={tiktok:"TIKTOK",instagram:"INSTAGRAM",twitter:"TWITTER/X",facebook:"FACEBOOK",soundcloud:"SOUNDCLOUD",snapchat:"SNAPCHAT",pinterest:"PINTEREST",reddit:"REDDIT",tumblr:"TUMBLR",dailymotion:"DAILYMOTION",vimeo:"VIMEO",bilibili:"BILIBILI",bluesky:"BLUESKY",twitch:"TWITCH","twitch clips":"TWITCH CLIPS",streamable:"STREAMABLE",vk:"VK",ok:"OK.RU",rutube:"RUTUBE",loom:"LOOM",newgrounds:"NEWGROUNDS",youtube:"YOUTUBE","youtube shorts":"YT SHORTS","youtube music":"YT MUSIC",spotify:"SPOTIFY",xiaohongshu:"XIAOHONGSHU",linkedin:"LINKEDIN"};
+const nm=s=>NAMES[s]||s.toUpperCase();
+
+/* warna brand tiap platform — tombol yang dipilih ikut warna brandnya */
+const BRAND={tiktok:"#fe2c55",instagram:"#e1306c",twitter:"#1d9bf0",facebook:"#1877f2",soundcloud:"#ff5500",snapchat:"#fffc00",pinterest:"#e60023",reddit:"#ff4500",tumblr:"#00a8ff",dailymotion:"#00aaff",vimeo:"#1ab7ea",bilibili:"#00a1d6",bluesky:"#0085ff",twitch:"#9146ff","twitch clips":"#9146ff",streamable:"#1a9fff",vk:"#0077ff",ok:"#ee8208",rutube:"#e53935",loom:"#625df5",newgrounds:"#ffb700",youtube:"#ff0033","youtube shorts":"#ff0033","youtube music":"#ff0033",spotify:"#1db954",xiaohongshu:"#ff2442",linkedin:"#0a66c2"};
+const hexA=(hex,a)=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;};
+/* accent console mengikuti brand platform yang dipilih */
+function setAccent(brand){const r=document.documentElement.style;r.setProperty("--accent",brand);r.setProperty("--accent-border",hexA(brand,.28));r.setProperty("--accent-glow",hexA(brand,.08));r.setProperty("--accent-hborder",hexA(brand,.65));r.setProperty("--accent-hglow",hexA(brand,.14));r.setProperty("--accent-btn-glow",hexA(brand,.35));};
+
+const ERR_ID={"error.api.auth.jwt.missing":"Server meminta verifikasi manusia.","error.api.auth.jwt.invalid":"Sesi verifikasi kedaluwarsa, coba lagi.","error.api.auth.key.missing":"Instance ini butuh API key — isi di Pengaturan ⚙️.","error.api.auth.key.invalid":"API key salah — periksa di Pengaturan ⚙️.","error.api.auth.key.not_api_key":"Instance ini butuh API key — isi di Pengaturan ⚙️.","error.link.unsupported":"Link tidak didukung mesin ini.","error.link.invalid":"Link tidak valid.","error.fetch.empty":"Konten tidak ditemukan / sudah dihapus.","error.api.rate_exceeded":"Kena limit server, tunggu sebentar lalu coba lagi.","error.api.disabled.service":"Layanan ini dimatikan di server.","error.api.downstream":"Server sumber bermasalah, coba lagi nanti."};
+const errMsg=c=>ERR_ID[c]||("Gagal: "+c);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>n.toLocaleString("en-US");
+
+function setMsg(h,cls){const m=$("msg");m.className="msg"+(cls?" "+cls:"");m.innerHTML=h;}
+function setCst(t,cls){const c=$("cst");c.textContent=t;c.className="st"+(cls?" "+cls:"");}
+function setSys(ok,txt){$("sysdot").className="dot"+(ok===true?" ok":ok===false?" bad":"");$("sysmsg").textContent=txt;}
+
+async function loadInstance(){
+  setSys(null,"MENGHUBUNGKAN…");
+  try{
+    const r=await fetch(getApi(),{headers:{Accept:"application/json"}});
+    instance=await r.json();
+    const svcs=(instance.cobalt&&instance.cobalt.services)||[];
+    $("stSvc").textContent=svcs.length;
+    setSys(true,"SYSTEM OPERATIONAL");
+    buildGrid(svcs);
+    setupTurnstile();
+  }catch(e){ setSys(false,"SERVER OFFLINE"); $("stSvc").textContent="–"; }
+}
+function buildGrid(svcs){
+  const g=$("grid"); g.innerHTML="";
+  const all=[null,...svcs];
+  all.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="plat"+(s===null?" on":"");
+    const brand=s===null?"#22d3ee":(BRAND[s]||"#22d3ee");
+    b.style.setProperty("--brand",brand);
+    b.style.setProperty("--brand-soft",hexA(brand,.25));
+    b.style.setProperty("--brand-glow",hexA(brand,.48));
+    b.innerHTML=`<span class="wave"></span><span class="ic"><i class="${s===null?"fa-solid fa-globe":(ICONS[s]||"fa-solid fa-link")}"></i></span><span>${s===null?"UNIVERSAL":nm(s)}</span>`;
+    b.onclick=()=>{
+      g.querySelectorAll(".plat").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      const brand=s===null?"#22d3ee":(BRAND[s]||"#22d3ee");
+      setAccent(brand);
+      $("tgt").textContent=s===null?"UNIVERSAL":nm(s);
+      $("url").placeholder=s===null?"Paste Universal Link here...":`Paste ${nm(s)} Link here...`;
+      $("url").focus();
+    };
+    g.appendChild(b);
+  });
+}
+
+/* ---------- turnstile: render sekali di awal, persis pola frontend cobalt ---------- */
+let tsWidgetId=null, tsSolved=false, tsSitekey=null, tsErrCount=0, tsDead=false;
+function setupTurnstile(){
+  const sk=instance&&instance.cobalt&&instance.cobalt.turnstileSitekey;
+  if(!sk||getKey()){ $("tscard").style.display="none"; return; }
+  if(tsSitekey===sk&&tsWidgetId!==null){ if(!tsSolved)$("tscard").style.display="block"; return; }
+  tsSitekey=sk; tsSolved=false; tsWidgetId=null; tsErrCount=0;
+  $("tscard").style.display="block";
+  const box=$("tsbox"); box.innerHTML="";
+  const render=()=>{
+    try{
+      tsWidgetId=turnstile.render(box,{
+        sitekey:sk,
+        "refresh-expired":"never",
+        "retry-interval":800,
+        callback:()=>{ tsSolved=true; $("tscard").style.display="none"; },
+        "expired-callback":()=>{ tsSolved=false; try{turnstile.reset(tsWidgetId);}catch(e){} $("tscard").style.display="block"; },
+        "error-callback":()=>{
+          if(tsDead)return true;
+          tsErrCount++;
+          if(tsErrCount>=2){
+            tsDead=true;
+            $("tscard").style.display="none";
+            const m=$("msg"); m.className="msg err";
+            m.innerHTML='⚠️ Verifikasi anti-bot <b>diblokir untuk situs pihak ketiga</b> — cobalt hanya mengizinkan verifikasi di situs resmi mereka.<br><br>Solusi yang pasti jalan: jalankan mesin sendiri via Docker (±5 menit, tanpa verifikasi, YouTube ikut jalan).<br><a class="dlbtn" style="margin-top:10px" href="cobalt-docker-compose.yml" download>⬇️ UNDUH FILE DOCKER-COMPOSE.YML</a><div class="note">Lalu: install Docker Desktop → simpan file sebagai <b>docker-compose.yml</b> → <b>docker compose up -d</b> → di web ini ⚙️ isi URL API <b>http://localhost:9000/</b> → Simpan.</div>';
+          }
+          return true;
+        }
+      });
+    }catch(e){ setTimeout(()=>{ if(tsWidgetId===null)render(); },2500); }
+  };
+  if(typeof turnstile!=="undefined")render();
+  else{ const iv=setInterval(()=>{ if(typeof turnstile!=="undefined"){clearInterval(iv);render();} },300); }
+}
+async function fetchJwt(){
+  let tok=null;
+  try{ tok=turnstile.getResponse(tsWidgetId); }catch(e){}
+  if(!tok)throw new Error("Selesaikan verifikasi manusia di atas dulu, lalu klik EXTRACT lagi.");
+  const r=await fetch(getApi()+"session",{method:"POST",headers:{"cf-turnstile-response":tok}});
+  const j=await r.json().catch(()=>null);
+  if(!j||!j.token)throw new Error("Verifikasi ditolak server, coba lagi.");
+  jwt=j; tsSolved=false;
+  try{ turnstile.reset(tsWidgetId); }catch(e){}
+  $("tscard").style.display="block";
+}
+
+window.tsRetry=async function(){
+  const cur=getApi();
+  const next=YT_PRESETS[(YT_PRESETS.indexOf(cur)+1)%YT_PRESETS.length];
+  localStorage.setItem("dl_api",next); jwt=null;
+  setMsg("🔄 Beralih ke instance <b>"+esc(next)+"</b>…","");
+  setCst("PROCESSING","run");
+  await loadInstance();
+  go();
+};
+
+async function cobalt(body,ms=90000){
+  const headers={Accept:"application/json","Content-Type":"application/json"};
+  const jwtValid=()=>jwt&&Date.now()<jwt.exp*1000-8000;
+  if(getKey())headers["Authorization"]="Api-Key "+getKey();
+  else if(jwtValid())headers["Authorization"]="Bearer "+jwt.token;
+  const post=async()=>{
+    const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms);
+    try{ return await fetch(getApi(),{method:"POST",headers,body:JSON.stringify(body),signal:ctl.signal}); }
+    finally{ clearTimeout(t); }
+  };
+  try{
+    let r=await post();
+    let d=await r.json().catch(()=>null);
+    if(d&&d.status==="error"&&d.error&&d.error.code==="error.api.auth.jwt.missing"&&!getKey()){
+      await fetchJwt();
+      headers["Authorization"]="Bearer "+jwt.token;
+      r=await post();
+      d=await r.json().catch(()=>null);
+    }
+    if(d&&d.status==="error"&&d.error&&/^error\.api\.auth\.key/.test(d.error.code||"")){
+      setTimeout(()=>{ try{ openSettings(); const sm=$("setMsg"); sm.textContent="🔑 Tempel API key instance pribadi di kolom API Key, lalu klik Simpan."; sm.className="msg err"; }catch(e){} },60);
+    }
+    return d;
+  }catch(e){
+    if(e&&e.name==="AbortError")throw new Error("Instance tidak merespons dalam 90 detik.");
+    throw e;
+  }
+}
+
+/* ---------- YouTube via Piped: tanpa VPS, tanpa instance ---------- */
+const PIPED_APIS=["https://api.piped.private.coffee","https://pipedapi.ducks.party"];
+const INVIDIOUS_APIS=["https://invidious.f5.si","https://iv.melmac.space"];
+function ytIdOf(url){
+  const m=String(url).match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/|v\/)|music\.youtube\.com\/watch\?[^#]*v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+function parseQ(q){const m=String(q||"").match(/(\d+)/);return m?parseInt(m[1],10):0;}
+async function pipedStreams(id){
+  let lastErr=null, botBlocked=false;
+  for(const api of PIPED_APIS){
+    try{
+      const r=await fetch(api+"/streams/"+id,{headers:{Accept:"application/json"}});
+      const txt=await r.text();
+      if(/not a bot|SignInConfirmNotBot|LOGIN_REQUIRED/i.test(txt))botBlocked=true;
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const j=JSON.parse(txt);
+      if(j&&j.title)return j;
+      throw new Error("respons kosong");
+    }catch(e){lastErr=e;}
+  }
+  if(botBlocked)throw new Error("YOUTUBE_BOTCHECK");
+  throw lastErr||new Error("semua instance Piped offline");
+}
+async function invidiousStreams(id){
+  let lastErr=null;
+  for(const api of INVIDIOUS_APIS){
+    try{
+      const r=await fetch(api+"/api/v1/videos/"+id,{headers:{Accept:"application/json"}});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const j=await r.json();
+      if(j&&j.title&&j.formatStreams)return j;
+      throw new Error("respons kosong");
+    }catch(e){lastErr=e;}
+  }
+  throw lastErr||new Error("semua instance Invidious offline");
+}
+/* Tambahan untuk kartu Piped/Invidious bila hasilnya turun kualitas:
+   - bila tak ada aliran audio: tombol MP3 asli (cobalt audio → jembatan)
+   - bila kualitas terbaik di bawah yang dipilih: tombol jembatan untuk
+     video kualitas penuh + MP3 (box mengunduh file utuh dulu) */
+function pipedExtras(card,url,bestQ,hasAudio){
+  const row=card.querySelector(".dlrow");
+  /* Tombol jembatan TIDAK ditambah di sini — jembatan sudah dicoba
+     dulu sebelum Piped (goYouTube), jadi tombol ini redundan. */
+  if(!hasAudio){
+    const b=document.createElement("button");b.className="dlbtn audio";b.textContent="🎵 DOWNLOAD MP3";
+    b.onclick=async()=>{b.disabled=true;b.textContent="⏳ MEMPROSES MP3…";
+      try{const a=await cobaltAudio(url);
+        if(a){const a2=document.createElement("a");
+          a2.href=downloadUrl(a.url,a.filename,a.ext); a2.setAttribute("download",cleanName(a.filename,a.ext));
+          a2.textContent="🎵 UNDUH MP3 SEKARANG"; a2.className="dlbtn audio"; b.replaceWith(a2); return;}
+      }catch(e){/* lanjut ke jembatan */}
+      try{const jid=await bridgeStart(url,"audio");const s2=await bridgeWait(jid,s=>{if(s.progress!=null)b.textContent="⏳ MP3 "+s.progress+"%…";});
+        const a2=document.createElement("a");a2.href=BRIDGE+s2.file_url;a2.textContent="🎵 UNDUH MP3 SEKARANG";a2.className="dlbtn audio";b.replaceWith(a2);}
+      catch(e){b.textContent="⚠️ MP3 GAGAL — COBA LAGI";b.disabled=false;}};
+    row.appendChild(b);
+  }
+}
+async function goInvidious(url,id){
+  setMsg('<span class="spin"></span>MENGAMBIL VIA INVIDIOUS…',"");
+  const s=await invidiousStreams(id);
+  const muxed=(s.formatStreams||[]).filter(v=>v.url&&!/\.m3u8($|\?)/i.test(v.url));
+  muxed.sort((a,b)=>parseQ(b.qualityLabel)-parseQ(a.qualityLabel));
+  const btns=muxed.slice(0,3).map(v=>["⬇️ "+String(v.qualityLabel||"VIDEO").toUpperCase(),v.url,false]);
+  const aud=(s.adaptiveFormats||[]).filter(a=>a.type&&a.type.startsWith("audio/")&&a.url).sort((a,b)=>(b.bitrate||0)-(a.bitrate||0));
+  if(aud.length)btns.push(["🎵 AUDIO",aud[0].url,true]);
+  if(!btns.length)throw new Error("Tidak ada stream yang bisa diunduh (video privat/dibatasi).");
+  const bestQ=muxed.length?parseQ(muxed[0].qualityLabel):0;
+  const wantQ=$("q").value==="max"?1080:(parseInt($("q").value,10)||720);
+  const thumb="https://i.ytimg.com/vi/"+id+"/mqdefault.jpg";
+  const R=$("results");R.innerHTML="";
+  const card=dlCard({title:s.title||"YouTube video",thumb:thumb,badge:"VIA INVIDIOUS",btns});
+  R.appendChild(card);
+  pipedExtras(card,url,bestQ,aud.length>0);
+  bumpProc();saveHist(url,s.title||"YouTube video");
+  setMsg("✅ Berhasil via Invidious — klik tombol untuk mengunduh.","ok");setCst("DONE","done");
+}
+async function goPiped(url,id){
+  setMsg('<span class="spin"></span>MENGAMBIL VIA PIPED…',"");
+  let s;
+  try{ s=await pipedStreams(id); }
+  catch(e){
+    if(e.message==="YOUTUBE_BOTCHECK"){
+      try{ await goInvidious(url,id); return; }
+      catch(e2){ throw new Error("YouTube mengunci video ini. Piped gagal, Invidious juga gagal: "+e2.message); }
+    }
+    throw e;
+  }
+  const muxed=(s.videoStreams||[]).filter(v=>!v.videoOnly&&v.url&&v.format!=="HLS"&&!/\.m3u8($|\?)/i.test(v.url));
+  muxed.sort((a,b)=>parseQ(b.quality)-parseQ(a.quality));
+  const btns=muxed.slice(0,3).map(v=>["⬇️ "+String(v.quality||"VIDEO").toUpperCase(),v.url,false]);
+  const aud=(s.audioStreams||[]).filter(a=>a.url).sort((a,b)=>parseQ(b.quality)-parseQ(a.quality));
+  if(aud.length)btns.push(["🎵 AUDIO",aud[0].url,true]);
+  if(!btns.length)throw new Error("Tidak ada stream yang bisa diunduh (video privat/dibatasi).");
+  const bestQ=muxed.length?parseQ(muxed[0].quality):0;
+  const wantQ=$("q").value==="max"?1080:(parseInt($("q").value,10)||720);
+  const R=$("results");R.innerHTML="";
+  const card=dlCard({title:s.title||"YouTube video",thumb:s.thumbnailUrl,badge:"VIA PIPED",btns});
+  R.appendChild(card);
+  pipedExtras(card,url,bestQ,aud.length>0);
+  bumpProc();saveHist(url,s.title||"YouTube video");
+  setMsg("✅ Berhasil via Piped — klik tombol untuk mengunduh.","ok");setCst("DONE","done");
+}
+
+function dlCard(o){
+  const d=document.createElement("div"); d.className="rcard";
+  d.innerHTML=`${o.thumb?`<img class="th" src="${esc(o.thumb)}" loading="lazy" onerror="this.style.display='none'">`:""}
+    <div style="flex:1;min-width:0"><div class="fn">${esc(o.title)}</div>
+    ${o.badge?`<span class="badge${o.badgeCls||""}">${esc(o.badge)}</span>`:""}
+    <div class="dlrow"></div></div>`;
+  const row=d.querySelector(".dlrow");
+  o.btns.forEach(([lb,url,aud])=>{const a=document.createElement("a");
+    /* href = URL unduhan (tunnel cobalt langsung, CDN lewat proxy):
+       ketuk = unduh, salin link / buka di tab baru = tetap unduh,
+       bukan memutar video */
+    a.className="dlbtn"+(aud?" audio":"");a.href=downloadUrl(url,o.title,aud?"mp3":"mp4");
+    a.setAttribute("download",cleanName(o.title,aud?"mp3":"mp4"));a.textContent=lb;
+    a.addEventListener("click",ev=>{ev.preventDefault();directDownload(url,o.title);});
+    row.appendChild(a);});
+  return d;
+}
+/* ekstensi dari nama file (mp4/mp3/opus/…), null bila tidak ada */
+function extOf(name){const m=String(name||"").match(/\.([a-z0-9]{2,5})$/i);return m?m[1].toLowerCase():null;}
+/* nama file bersih tanpa ekstensi ganda (judul cobalt sudah berakhiran .mp4) */
+function cleanName(filename,ext){
+  let n=(filename||"download").replace(/[<>:"/\\|?*]/g,"_").replace(/\.(mp4|mp3|webm|mkv|opus|m4a|wav|ogg)$/i,"");
+  return n+"."+(ext||"mp4");
+}
+/* URL unduhan paksa via Worker dl-proxy (streaming, Content-Disposition:
+   attachment) — browser mengunduh, bukan memutar video */
+function proxyUrl(url,filename,ext){
+  const clean=cleanName(filename,ext||"mp4");
+  return "https://dl-proxy.ikbalklop.workers.dev/?url="+encodeURIComponent(url)+"&filename="+encodeURIComponent(clean);
+}
+/* URL unduhan: URL tunnel cobalt langsung (cobalt sudah memaksa unduh
+   + nama file benar) — tanpa lewat Worker, satu lompatan lebih sedikit.
+   URL lain (CDN langsung) tetap lewat proxy agar browser mengunduh,
+   bukan memutar video. */
+function downloadUrl(url,filename,ext){
+  try{ if(new URL(url).origin===new URL(getApi()).origin) return url; }catch(e){}
+  return proxyUrl(url,filename,ext);
+}
+async function directDownload(url,filename){
+  const clean=cleanName(filename,"mp4");
+  const a=document.createElement("a");
+  a.href=downloadUrl(url,filename,"mp4");a.download=clean;
+  document.body.appendChild(a);a.click();a.remove();
+  setMsg("✅ Download dimulai…","ok");
+}
+function guessSvc(url){
+  try{const h=new URL(url).hostname.toLowerCase();
+    const m={tiktok:1,instagram:1,instagr:1,twitter:1,"x.com":1,facebook:1,fb:1,soundcloud:1,snapchat:1,pinterest:1,pin:1,reddit:1,tumblr:1,dailymotion:1,vimeo:1,bilibili:1,bsky:1,twitch:1,streamable:1,vk:1,rutube:1};
+    for(const k in m)if(h.includes(k))return k==="x.com"?"twitter":k;
+  }catch(e){} return null;
+}
+/* minta audio MP3 asli ke cobalt (downloadMode audio, audioFormat mp3);
+   kembalikan {url,filename,ext} atau null bila cobalt tak bisa */
+async function cobaltAudio(url){
+  const d=await cobalt({url,videoQuality:"max",downloadMode:"audio",audioFormat:"mp3",filenameStyle:"pretty"});
+  if(!d||d.status==="error")return null;
+  if(d.status==="tunnel"||d.status==="redirect")return {url:d.url,filename:d.filename||"audio",ext:extOf(d.filename)||"mp3"};
+  if(d.audio)return {url:d.audio,filename:d.audioFilename||"audio",ext:extOf(d.audioFilename)||"mp3"};
+  return null;
+}
+function renderResult(d,srcUrl){
+  const R=$("results"); R.innerHTML="";
+  if(!d){setMsg("⚠️ Tidak ada respons dari server.","err");setCst("ERROR","err");return;}
+  if(d.status==="error"){setMsg("⚠️ "+esc(errMsg(d.error.code)),"err");setCst("ERROR","err");return;}
+  const svc=guessSvc(srcUrl);
+  if(d.status==="tunnel"||d.status==="redirect"){
+    const card=dlCard({title:d.filename||"file",badge:"HD QUALITY",btns:[["⬇️ DOWNLOAD VIDEO",d.url,false]]});
+    const row=card.querySelector(".dlrow");
+    const b=document.createElement(d.audio?"a":"button");
+    b.className="dlbtn audio"; b.textContent="🎵 DOWNLOAD MP3";
+    if(d.audio){
+      /* cobalt menyertakan URL audio terpisah — MP3 asli, langsung unduh */
+      const afn=d.audioFilename||"audio.mp3", aext=extOf(afn)||"mp3";
+      b.href=downloadUrl(d.audio,afn,aext); b.setAttribute("download",cleanName(afn,aext));
+    }else{
+      /* MP3 diproses saat tombol ditekan: cobalt audio dulu (selalu nyala),
+         bila gagal jatuh ke jembatan (yt-dlp + ffmpeg → MP3 asli) */
+      b.onclick=async()=>{b.disabled=true;b.textContent="⏳ MEMPROSES MP3…";
+        try{const a=await cobaltAudio(srcUrl);
+          if(a){const a2=document.createElement("a");
+            a2.href=downloadUrl(a.url,a.filename,a.ext); a2.setAttribute("download",cleanName(a.filename,a.ext));
+            a2.textContent="🎵 UNDUH MP3 SEKARANG"; a2.className="dlbtn audio"; b.replaceWith(a2); return;}
+        }catch(e){/* lanjut ke jembatan */}
+        try{const jid=await bridgeStart(srcUrl,"audio");const s2=await bridgeWait(jid,s=>{if(s.progress!=null)b.textContent="⏳ MP3 "+s.progress+"%…";});
+          const a2=document.createElement("a");a2.href=BRIDGE+s2.file_url;a2.textContent="🎵 UNDUH MP3 SEKARANG";a2.className="dlbtn audio";b.replaceWith(a2);}
+        catch(e){b.textContent="⚠️ MP3 GAGAL — COBA LAGI";b.disabled=false;}};
+    }
+    row.appendChild(b); R.appendChild(card);
+    bumpProc(); saveHist(srcUrl,d.filename||"file");
+    setMsg("✅ Berhasil — klik tombol untuk mengunduh.","ok"); setCst("DONE","done");
+  }else if(d.status==="picker"){
+    const wrap=document.createElement("div"); wrap.className="rcard"; wrap.style.display="block";
+    wrap.innerHTML=`<div class="fn">Pilih item (${d.picker.length})</div><span class="badge">${esc(svc?nm(svc):"MULTI")}</span><div class="pgrid"></div>`;
+    const g=wrap.querySelector(".pgrid");
+    d.picker.forEach((p,i)=>{const c=document.createElement("div");c.className="pick";
+      c.innerHTML=`${p.thumb?`<img src="${esc(p.thumb)}" loading="lazy">`:""}<div class="pb"><div class="pt">${esc(p.type)}</div><a href="${esc(p.url)}" target="_blank" rel="noopener" download>⬇️ UNDUH ${i+1}</a></div>`;
+      g.appendChild(c);});
+    if(d.audio){const a=document.createElement("a");a.className="dlbtn audio";a.style.marginTop="12px";
+      a.href=d.audio;a.target="_blank";a.rel="noopener";a.setAttribute("download",d.audioFilename||"audio.mp3");a.textContent="🎵 DOWNLOAD MP3";wrap.appendChild(a);}
+    R.appendChild(wrap); bumpProc(); saveHist(srcUrl,d.picker.length+" item");
+    setMsg("✅ Berhasil — klik tombol untuk mengunduh.","ok"); setCst("DONE","done");
+  }else if(d.status==="local-processing"){
+    const btns=(d.tunnel||[]).map((u,i)=>["⬇️ BAGIAN "+(i+1),u,false]);
+    R.appendChild(dlCard({title:(d.output&&d.output.filename)||"file",badge:"PERLU DIGABUNG",badgeCls:" g",btns}));
+    setMsg("ℹ️ File dikirim per bagian — unduh semua lalu gabung manual.",""); setCst("DONE","done");
+  }else{setMsg("⚠️ Respons tak dikenal dari server.","err");setCst("ERROR","err");}
+}
+
+function getHist(){try{return JSON.parse(localStorage.getItem("dl_hist")||"[]")}catch(e){return[]}}
+/* ---------- statistik global via box (v3.16, ala Zeta) ----------
+   Angka diambil dari /api/stats di box (bukan karangan): Pengguna =
+   UID browser berbeda, Download sukses = ekstraksi berhasil.
+   Kalau box sedang tidur, tampilkan data terakhir yang tersimpan;
+   kalau belum pernah ada, seksi disembunyikan diam-diam. */
+const STATS_SITE="downloader";
+function dlUid(){let u=null;try{u=localStorage.getItem("dl_uid");}catch(e){}if(!u){u=(window.crypto&&crypto.randomUUID?crypto.randomUUID():"u"+Date.now().toString(36)+Math.random().toString(16).slice(2));try{localStorage.setItem("dl_uid",u);}catch(e){}}return u;}
+async function statsHit(type){try{await fetch(BRIDGE+"/api/stats/hit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({site:STATS_SITE,type:type,uid:dlUid()}),keepalive:true});}catch(e){/* statistik gagal diam-diam — unduhan tetap jalan */}}
+function countUp(el,to){const t0=performance.now(),dur=900;const step=t=>{const p=Math.min(1,(t-t0)/dur);el.textContent=fmt(Math.round(to*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
+function drawChart(days){
+  const cv=$("statChart"); if(!cv||!days||!days.length)return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth||800, H=140;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const x=cv.getContext("2d"); x.scale(dpr,dpr);
+  const padL=8,padR=8,padT=12,padB=20;
+  const maxV=Math.max(1,...days.map(d=>Math.max(d.users,d.downloads)));
+  const X=i=>padL+(W-padL-padR)*(days.length===1?0.5:i/(days.length-1));
+  const Y=v=>padT+(H-padT-padB)*(1-v/maxV);
+  x.strokeStyle="rgba(255,255,255,.07)"; x.lineWidth=1;
+  [0.5,1].forEach(f=>{x.beginPath();x.moveTo(padL,Y(maxV*f));x.lineTo(W-padR,Y(maxV*f));x.stroke();});
+  /* label nilai maks di kiri atas (skala grafik) */
+  x.fillStyle="#5b6472"; x.font="10px ui-monospace,monospace"; x.textAlign="left";
+  x.fillText(fmt(maxV),padL,Y(maxV)-4);
+  const line=(key,color)=>{x.strokeStyle=color;x.lineWidth=2;x.beginPath();
+    days.forEach((d,i)=>{const px=X(i),py=Y(d[key]);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
+    x.fillStyle=color;days.forEach((d,i)=>{x.beginPath();x.arc(X(i),Y(d[key]),2.5,0,7);x.fill();});};
+  line("downloads","#22d3ee"); line("users","#34d399");
+  x.fillStyle="#5b6472"; x.font="10px ui-monospace,monospace";
+  const lbl=d=>d.date.slice(8)+"/"+d.date.slice(5,7);
+  /* label pertama rata kiri, terakhir rata kanan — supaya tidak terpotong
+     di tepi kanvas (dulu "28/10" tampil jadi "28/1") */
+  x.textAlign="left"; x.fillText(lbl(days[0]),padL,H-6);
+  const mid=Math.floor(days.length/2);
+  x.textAlign="center"; x.fillText(lbl(days[mid]),X(mid),H-6);
+  x.textAlign="right"; x.fillText(lbl(days[days.length-1]),W-padR,H-6);
+}
+async function statsLoad(){
+  const card=$("gstat");
+  const show=(d,note)=>{card.style.display="block";
+    countUp($("gsUsers"),d.users||0); countUp($("gsDl"),d.downloads||0);
+    drawChart(d.days||[]);
+    if(note)$("gsNote").textContent=note;};
+  try{
+    const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),6000);
+    const r=await fetch(BRIDGE+"/api/stats?site="+STATS_SITE,{signal:ctl.signal});
+    clearTimeout(t);
+    const j=await r.json();
+    if(!j||!j.status)throw new Error("bad");
+    try{localStorage.setItem("dl_stats_cache",JSON.stringify({t:Date.now(),d:j}));}catch(e){}
+    show(j,"14 hari terakhir · dihitung dari server · mulai 28 Okt 2026");
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem("dl_stats_cache")||"null");
+      if(c&&c.d&&Date.now()-c.t<86400000){show(c.d,"Server statistik sedang tidur — data terakhir "+new Date(c.t).toLocaleDateString("id-ID",{day:"numeric",month:"short"}));return;}
+    }catch(e2){}
+    card.style.display="none";
+  }
+}
+function bumpProc(){const n=(parseInt(localStorage.getItem("dl_proc")||"0",10)+1);localStorage.setItem("dl_proc",n);$("stProc").textContent=fmt(n);statsHit("download");}
+/* ---------- riwayat (v3.18, ala Zeta): maks 20, hanya 24 jam terakhir,
+   tampil 3 dulu + LIHAT SEMUA — biar rapi, tidak menumpuk ---------- */
+const HIST_TTL=86400000, HIST_MAX=20, HIST_PREVIEW=3;
+let histExpanded=false;
+function saveHist(url,title){const h=getHist().filter(it=>Date.now()-it.t<HIST_TTL);h.unshift({url,title,t:Date.now()});localStorage.setItem("dl_hist",JSON.stringify(h.slice(0,HIST_MAX)));renderHist();}
+function renderHist(){
+  const box=$("hist");box.innerHTML="";
+  let h=getHist().filter(it=>Date.now()-it.t<HIST_TTL);
+  if(h.length!==getHist().length)localStorage.setItem("dl_hist",JSON.stringify(h));
+  const n=h.length;
+  $("btnHist").textContent=($("histwrap").classList.contains("show")?"▾ HIDE HISTORY":"▸ SHOW HISTORY")+(n?" ("+n+")":"");
+  if(!n){box.innerHTML='<div class="note" style="text-align:center">Belum ada riwayat.</div>';$("btnHistMore").style.display="none";return;}
+  const shown=histExpanded?h:h.slice(0,HIST_PREVIEW);
+  shown.forEach(it=>{const d=document.createElement("div");d.className="hitem";
+    const dt=new Date(it.t).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    d.innerHTML=`<div><div class="u">${esc(it.title)}</div><div class="t">${esc(it.url.slice(0,60))}… · ${dt}</div></div>`;
+    const b=document.createElement("button");b.textContent="↻ PROSES LAGI";
+    b.onclick=()=>{$("url").value=it.url;go();};d.appendChild(b);box.appendChild(d);});
+  const more=$("btnHistMore");
+  if(n>HIST_PREVIEW){more.style.display="";more.textContent=histExpanded?"SEMBUNYIKAN":"LIHAT SEMUA ("+n+")";}
+  else more.style.display="none";
+}
+
+/* ---------- jembatan InstaBox: unduh YouTube penuh via yt-dlp di box ---------- */
+async function bridgeStart(url,mode){
+  const qv=$("q").value; const q=qv==="max"?1080:(parseInt(qv,10)||720);
+  const r=await fetch(BRIDGE+"/api/ytdl",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url,quality:q,mode})});
+  const j=await r.json().catch(()=>({}));
+  if(!j.id)throw new Error(j.error||"jembatan tidak menjawab (box mungkin sedang tidur)");
+  return j.id;
+}
+async function bridgeWait(id,onTick){
+  for(let i=0;i<360;i++){
+    await new Promise(s=>setTimeout(s,5000));
+    const s=await (await fetch(BRIDGE+"/api/ytdl/"+id)).json();
+    if(s.status==="done")return s;
+    if(s.status==="error")throw new Error(String(s.error||"unduhan gagal di jembatan").slice(0,160));
+    if(onTick)onTick(s);
+  }
+  throw new Error("jembatan timeout (30 menit)");
+}
+function bridgeCard(url,st){
+  const R=$("results");R.innerHTML="";
+  const vid=ytIdOf(url);
+  const card=dlCard({title:st.title||"YouTube video",thumb:vid?("https://i.ytimg.com/vi/"+vid+"/hqdefault.jpg"):"",badge:"VIA JEMBATAN",btns:[]});
+  const row=card.querySelector(".dlrow");
+  if(st.mode==="audio"){
+    const a=document.createElement("a");a.className="dlbtn audio";a.href=BRIDGE+st.file_url;a.textContent="🎵 DOWNLOAD MP3";row.appendChild(a);
+  }else{
+    const a=document.createElement("a");a.className="dlbtn";a.href=BRIDGE+st.file_url;a.textContent="⬇️ DOWNLOAD VIDEO"+(st.height?" "+st.height+"p":"");row.appendChild(a);
+    const b=document.createElement("button");b.className="dlbtn audio";b.textContent="🎵 DOWNLOAD MP3";
+    b.onclick=async()=>{b.disabled=true;b.textContent="⏳ MEMPROSES MP3…";
+      try{const jid=await bridgeStart(url,"audio");const s2=await bridgeWait(jid,s=>{if(s.progress!=null)b.textContent="⏳ MP3 "+s.progress+"%…";});
+        const a2=document.createElement("a");a2.href=BRIDGE+s2.file_url;a2.textContent="🎵 UNDUH MP3 SEKARANG";a2.className="dlbtn audio";b.replaceWith(a2);}
+      catch(e){b.textContent="⚠️ MP3 GAGAL — COBA LAGI";b.disabled=false;}};
+    row.appendChild(b);
+  }
+  R.appendChild(card);
+}
+/* bilah progres jembatan — model "baterai mengisi" ala vn-translator, versi minim:
+   persen + kecepatan + sisa waktu DI DALAM kotaknya */
+function bShow(){const b=$("bbar");b.style.display="block";b.className="bbar wait";$("bfill").style.width="4%";$("btext").textContent="menghubungi server cadangan…";}
+function bSet(txt,pct){const b=$("bbar");if(b.style.display==="none")bShow();$("btext").textContent=txt;
+  if(pct!=null){b.classList.remove("wait");$("bfill").style.width=Math.min(100,Math.max(0,pct))+"%";}}
+function bDone(txt){const b=$("bbar");b.className="bbar done";$("bfill").style.width="100%";$("btext").textContent=txt;}
+function bHide(){const b=$("bbar");if(b)b.style.display="none";}
+
+async function goBridge(url){
+  setMsg("🌉 VIA JEMBATAN — server cadangan sedang bekerja:","");setCst("PROCESSING","run");bShow();
+  const mode=$("m").value==="audio"?"audio":"video";
+  const t0=Date.now();
+  const id=await bridgeStart(url,mode);
+  const st=await bridgeWait(id,s=>{
+    const jalan=Math.max(1,Math.round((Date.now()-t0)/1000));
+    const tahap=s.stage||"memproses";
+    if(s.progress!=null){
+      bSet(tahap+" · "+s.progress+"%"+(s.speed?" · "+s.speed:"")+(s.eta!=null?" · sisa ±"+Math.max(1,Math.round(s.eta/60))+" mnt":""),s.progress);
+    }else if(s.duration){
+      const est=Math.max(1,Math.round(s.duration*0.2/60)+1);
+      bSet(tahap+" · "+jalan+" dtk · video ±"+Math.max(1,Math.round(s.duration/60))+" mnt · perkiraan total ±"+est+" mnt",null);
+    }else{
+      bSet(tahap+" · "+jalan+" dtk",null);
+    }
+  });
+  if(isMeta(url)&&(!st.title||st.title==="Video"))st.title="Facebook video";
+  bDone("✅ Selesai"+(st.mode==="audio"?" · MP3":(st.height?" · "+st.height+"p":"")));
+  bridgeCard(url,st);
+  bumpProc();saveHist(url,st.title||"YouTube video");
+  setMsg("✅ Berhasil via jembatan — klik tombol untuk mengunduh.","ok");setCst("DONE","done");
+}
+
+async function goYouTube(url,ytId){
+  const api=getApi();
+  const isPreset=[DEF_API,...YT_PRESETS].some(u=>u.replace(/\/*$/,"/")===api);
+  const svcs=(instance&&instance.cobalt&&instance.cobalt.services)||[];
+  const ytViaCobalt=svcs.includes("youtube")||svcs.includes("youtube music")||svcs.includes("youtube shorts");
+  let cobaltErr=null;
+  if(ytViaCobalt){
+    try{
+      const body={url,videoQuality:$("q").value,downloadMode:$("m").value,filenameStyle:"pretty"};
+      if($("m").value==="audio"){body.downloadMode="audio";body.audioFormat="mp3";}
+      const d=await cobalt(body);
+      if(d&&d.status!=="error"){renderResult(d,url);return;}
+      if(d&&d.error)cobaltErr=d.error.code||JSON.stringify(d.error);
+    }catch(e){cobaltErr=e.message;/* jatuh ke jembatan */}
+  }
+  /* Langsung ke jembatan (1080p) dulu — jangan tampilkan kartu Piped
+     360p bila jembatan masih bisa memberi kualitas yang diminta.
+     Bila jembatan gagal, baru jatuh ke Piped sebagai cadangan. */
+  try{ await goBridge(url); return; }
+  catch(e){
+    bHide(); /* bilah jembatan jangan tertinggal saat jatuh ke Piped */
+    try{ await goPiped(url,ytId); return; }
+    catch(e2){
+      if(cobaltErr)throw new Error("Backend gagal ("+cobaltErr+"), jembatan gagal, Piped juga gagal: "+e2.message);
+      throw new Error("Jembatan gagal dan Piped juga gagal: "+e2.message);
+    }
+  }
+}
+
+async function go(){
+  const url=$("url").value.trim();
+  if(!/^https?:\/\//i.test(url)){setMsg("⚠️ Tempel link yang valid (diawali http).","err");return;}
+  $("btnGo").disabled=true; $("results").innerHTML=""; bHide();
+  setMsg('<span class="spin"></span>REQUESTING CONTENT DATA…',""); setCst("PROCESSING","run");
+  try{
+    const ytId=ytIdOf(url);
+    if(ytId){ await goYouTube(url,ytId); }
+    else{
+      const body={url,videoQuality:$("q").value,downloadMode:$("m").value,filenameStyle:"pretty"};
+      if($("m").value==="audio"){body.downloadMode="audio";body.audioFormat="mp3";}
+      let d=null,cerr=null;
+      try{ d=await cobalt(body); }catch(e){ cerr=e; }
+      if((d&&d.status==="error")||cerr){
+        if(isMeta(url)){ await goBridge(url); /* Meta: cobalt tak pernah tembus tanpa login */ }
+        else if(d) renderResult(d,url);
+        else throw cerr;
+      }else renderResult(d,url);
+    }
+  }catch(e){
+    bHide();
+    const m=e.message||"Gagal terhubung ke server.";
+    if(/turnstile|verifikasi/i.test(m)&&YT_PRESETS.includes(getApi())){
+      const box=$("msg"); box.className="msg err";
+      box.innerHTML="⚠️ "+esc(m)+" — verifikasi gagal di instance ini.<br>";
+      const b=document.createElement("button");
+      b.className="btn"; b.style.marginTop="10px"; b.textContent="🔄 COBA INSTANCE LAIN";
+      b.onclick=()=>window.tsRetry();
+      box.appendChild(b);
+      const c=document.createElement("div"); c.className="note";
+      c.textContent="Instance komunitas kadang bermasalah — tombol ini otomatis pindah ke instance komunitas satunya lalu mengulang.";
+      box.appendChild(c);
+    }else setMsg("⚠️ "+esc(m),"err");
+    setCst("ERROR","err");
+  }
+  $("btnGo").disabled=false;
+}
+
+function openSettings(){
+  const cur=getApi();
+  $("setPreset").value=["https://cobalt-pribadi.onrender.com/","https://api.cobalt.tools/","https://cobalt-api.meowing.de/","https://capi.3kh0.net/"].includes(cur)?cur:"custom";
+  $("setApi").value=cur; $("setKey").value=getKey(); $("setMsg").textContent=""; $("modalSet").classList.add("show");
+}
+async function testConn(){
+  const u=$("setApi").value.trim().replace(/\/*$/,"/")||DEF_API;
+  $("setMsg").textContent="Menghubungi…";$("setMsg").className="msg";
+  try{const r=await fetch(u,{headers:{Accept:"application/json"}});const j=await r.json();
+    const n=(j.cobalt&&j.cobalt.services||[]).length;
+    $("setMsg").textContent=`✅ OK — cobalt v${j.cobalt.version}, ${n} layanan.`;$("setMsg").className="msg ok";
+  }catch(e){$("setMsg").textContent="❌ Gagal — URL tidak merespons.";$("setMsg").className="msg err";}
+}
+
+$("btnGo").onclick=go;
+$("url").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+$("btnSettings").onclick=openSettings;
+$("setPreset").onchange=()=>{const v=$("setPreset").value; if(v!=="custom")$("setApi").value=v; $("setApi").focus();};
+$("setClose").onclick=()=>$("modalSet").classList.remove("show");
+$("setReset").onclick=()=>{localStorage.removeItem("dl_api");localStorage.removeItem("dl_key");jwt=null;$("setApi").value=DEF_API;$("setKey").value="";loadInstance();};
+$("setSave").onclick=()=>{const u=$("setApi").value.trim();if(u)localStorage.setItem("dl_api",u);else localStorage.removeItem("dl_api");
+  const k=$("setKey").value.trim();if(k)localStorage.setItem("dl_key",k);else localStorage.removeItem("dl_key");
+  jwt=null;$("modalSet").classList.remove("show");loadInstance();setMsg("✅ Pengaturan disimpan.","ok");};
+$("setTest").onclick=testConn;
+$("btnHist").onclick=()=>{const w=$("histwrap");w.classList.toggle("show");if(!w.classList.contains("show"))histExpanded=false;renderHist();};
+$("btnHistMore").onclick=()=>{histExpanded=!histExpanded;renderHist();};
+$("btnClearHist").onclick=()=>{histExpanded=false;localStorage.removeItem("dl_hist");localStorage.removeItem("dl_proc");$("stProc").textContent="0";renderHist();};
+
+/* ---------- preloader (v3.18, ala Zeta): overlay logo + garis isi,
+   hilang saat halaman siap; pengaman 1,8 dtk supaya tidak pernah menahan */
+function hidePre(){const p=$("preloader");if(p)p.classList.add("hide");}
+window.addEventListener("load",()=>setTimeout(hidePre,350));
+setTimeout(hidePre,1800);
+$("modalSet").addEventListener("click",e=>{if(e.target===$("modalSet"))$("modalSet").classList.remove("show");});
+
+$("stProc").textContent=fmt(parseInt(localStorage.getItem("dl_proc")||"0",10));
+$("dlver").textContent="v"+DL_VER;
+loadInstance(); renderHist();
+statsHit("visit"); statsLoad();
+</script>
+</body>
+</html>
